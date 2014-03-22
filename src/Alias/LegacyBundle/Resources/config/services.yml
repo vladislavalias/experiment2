@@ -1,0 +1,7 @@
+parameters:
+#    alias_legacy.example.class: Alias\LegacyBundle\Example
+
+services:
+#    alias_legacy.example:
+#        class: %alias_legacy.example.class%
+#        arguments: [@service_id, "plain_value", %parameter%]
