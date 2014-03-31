@@ -16,9 +16,19 @@ class AppKernel extends Kernel
             new Symfony\Bundle\AsseticBundle\AsseticBundle(),
             new Doctrine\Bundle\DoctrineBundle\DoctrineBundle(),
             new Sensio\Bundle\FrameworkExtraBundle\SensioFrameworkExtraBundle(),
-            new Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle(),
-            new Alias\TestBundle\TestBundle(),
+            new Alias\TestBundle\AliasTestBundle(),
             new Alias\LegacyBundle\AliasLegacyBundle(),
+            
+            new Sonata\DoctrineORMAdminBundle\SonataDoctrineORMAdminBundle(),
+             // Add your dependencies
+            new Sonata\CoreBundle\SonataCoreBundle(),
+            new Sonata\BlockBundle\SonataBlockBundle(),
+            new Sonata\jQueryBundle\SonatajQueryBundle(),
+            new Knp\Bundle\MenuBundle\KnpMenuBundle(),
+
+            // Then add SonataAdminBundle
+            new Sonata\AdminBundle\SonataAdminBundle(),
+            new Alias\AdminBundle\AliasAdminBundle(),
         );
 
         if (in_array($this->getEnvironment(), array('dev', 'test'))) {

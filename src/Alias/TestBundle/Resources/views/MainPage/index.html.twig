@@ -1,0 +1,9 @@
+{% extends '::base.html.twig' %}
+
+{% block body %}
+  <h1>Продукты</h1>
+  {{ include(
+      'AliasTestBundle:MainPage:productsShow.html.twig',
+      { 'products': products }
+  ) }}
+{% endblock %}

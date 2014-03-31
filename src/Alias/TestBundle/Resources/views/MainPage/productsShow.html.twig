@@ -1,0 +1,33 @@
+{% for product in products %}
+  <div class="product">
+    <table>
+      <thead>
+        <tr>
+          <td colspan="3">
+            {{ product.name }}
+          </td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="image">
+            <img src="{{ product.image }}" />
+          </td>
+          <td>
+            {{ product.description }}
+          </td>
+          <td class="price">
+            {{ product.formatPrice }}
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">
+            {{ product.link }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+{% endfor %}

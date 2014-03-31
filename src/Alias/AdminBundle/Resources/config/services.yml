@@ -1,0 +1,11 @@
+services:
+    alias.admin.admin.product:
+        class: Alias\AdminBundle\Admin\ProductAdmin
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: admin, label: product }
+        arguments: [null, Alias\TestBundle\Entity\Product, SonataAdminBundle:CRUD]
+    alias.admin.admin.task:
+        class: Alias\AdminBundle\Admin\TaskAdmin
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: admin, label: task }
+        arguments: [null, Alias\TestBundle\Entity\Task, SonataAdminBundle:CRUD]

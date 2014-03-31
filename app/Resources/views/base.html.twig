@@ -3,11 +3,20 @@
     <head>
         <meta charset="UTF-8" />
         <title>{% block title %}Welcome!{% endblock %}</title>
-        {% block stylesheets %}{% endblock %}
+        {% block stylesheets %}
+        
+          <link href="{{ asset('bundles/aliastest/css/main.css') }}" rel="stylesheet" />
+        {% endblock %}
         <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
+        {% block javascripts %}{% endblock %}
     </head>
     <body>
-        {% block body %}{% endblock %}
-        {% block javascripts %}{% endblock %}
+      <div class="wrapper">
+        
+        <div class="container">
+          {% block body %}{% endblock %}
+        </div>
+        
+      </div>
     </body>
 </html>

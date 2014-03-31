@@ -1,2 +1,6 @@
+alias_admin:
+    resource: "@AliasAdminBundle/Resources/config/routing.yml"
+    prefix:   /
+
 _test:
-    resource: "@TestBundle/Resources/config/routing.yml"
+    resource: "@AliasTestBundle/Resources/config/routing.yml"

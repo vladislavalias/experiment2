@@ -1,0 +1,46 @@
+body, html
+{
+  padding: 0px;
+  margin: 0px;
+}
+
+.wrapper
+{
+  width: 100%;
+  height: 100%;
+}
+
+.container
+{
+  margin: 0px auto;
+  width: 960px;
+  padding: 20px;
+}
+
+.wrapper table
+{
+  border-collapse: collapse;
+  margin: 10px;
+  width: 100%;
+}
+
+.wrapper table td
+{
+  border: 1px solid grey;
+  padding: 5px;
+}
+
+.wrapper table td.image
+{
+  width: 200px;
+  overflow: hidden;
+  text-align: center;
+  vertical-align: middle;
+}
+.wrapper table td.price
+{
+  width: 120px;
+  overflow: hidden;
+  text-align: center;
+  vertical-align: middle;
+}
