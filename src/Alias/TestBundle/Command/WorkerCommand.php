@@ -38,6 +38,8 @@ class WorkerCommand extends ContainerAwareCommand
 
   protected function execute(InputInterface $input, OutputInterface $output)
   {
+    $output->writeln('Start.');
+    
     $tasks = $this->getTasks();
     
     foreach ($tasks as $task)
@@ -50,7 +52,7 @@ class WorkerCommand extends ContainerAwareCommand
       $this->saveProducts($this->getProducts());
     }
     
-    $output->writeln('test test');
+    $output->writeln('Finished.');
   }
   
   protected function saveProducts($products)

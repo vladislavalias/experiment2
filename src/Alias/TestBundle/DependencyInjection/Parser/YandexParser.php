@@ -17,12 +17,24 @@ class YandexParser extends BaseParser
   static $pageSelector   = array(
     '.b-pager__page'
   );
+  
   static $productSelector   = array(
     '.page__b-offers__guru a[href^=/model.xml]'
   );
+  
   static $productTablesSelector   = array(
     'div.b-offers'
   );
+  
+  static $productDataSelectors = array(
+    'description' => '.b-offers__spec',
+    'image'       => '.b-offers__img',
+    'name'        => '.b-offers__name',
+    'price'       => '.b-prices__num',
+    'currency'    => '.b-prices__currency',
+    'link'        => '.b-offers__name',
+  );
+  
   static $categorySelector  = array(
     'td.categories a[href^=/catalog.xml]',
     'div.b-category-pop-vendors a[href^=/guru.xml]',
@@ -45,7 +57,7 @@ class YandexParser extends BaseParser
   
   static $nest = 0;
 
-  protected function increaseCatagoryCount()
+  protected function increaseCategoryCount()
   {
     return ++$this->categoryCount;
   }
@@ -88,9 +100,6 @@ class YandexParser extends BaseParser
     if (!$selectors) return $page;
     $finded = array();
     
-    
-    dump($selectors, false);
-    
     foreach ($selectors as $selector)
     {
       $temp = $page->find($selector);
@@ -103,53 +112,45 @@ class YandexParser extends BaseParser
       }
     }
     
-    echo'finded';
-    
     return $finded;
   }
   
   protected function getProductPageUrl($page, $currentPage)
   {
-    $pagesUrls    = $this->urlsFrom($page, self::$pageSelector);
-    $result       = false;
-    $currentIndex = ($currentPage - 1) * 10;
+    $pagesUrls  = $this->urlsFrom($page, self::$pageSelector);
+    $result     = false;
+    $pageIndex  = $currentPage - 1;
     
     if ($pagesUrls)
     {
-      $index  = $currentPage - 1;
-      $to     = sprintf('-BPOS=%d-', $currentIndex);
-      $result = preg_replace(
-        '/\-BPOS=[0-9]*\-/u',
-        $to,
-        $pagesUrls[$index]
-      );
+      $firstPage  = preg_replace('/\-BPOS=[0-9]*\-/u', '-BPOS=0-', $pagesUrls[0]);
+      $pages      = array_merge(array($firstPage), $pagesUrls);
+      $result     = $pages[$pageIndex];
     }
     
     return $result;
   }
   
-  protected function extractProductsData($url)
+  protected function extractProductDatas($url)
   {
     $page           = $this->getHtml($url);
     $productTables  = $this->findFrom($page, self::$productTablesSelector, true);
     $products       = array();
     
-    dump($url, false);
-    dump(sizeof($productTables));
-    
     if ($productTables)
     {
       foreach ($productTables as $table)
       {
-        dump($table->find('.b-offers__img')->src);
-        
-        $products[] = array(
-          'link' => $table->find('.b-offers__img')->src,
-        );
-      } 
+        $product = array();
+        foreach (self::$productDataSelectors as $name => $selector)
+        {
+          $product[$name] = $this->getProductDataFromFinded($table->find($selector, 0), $name);
+        }
+        $products[] = $product;
+      }
     }
     
-    dump('fail');
+    return $products;
   }
 
   protected function extractProductsFromUrl($url)
@@ -159,10 +160,10 @@ class YandexParser extends BaseParser
     for ($i = 1; $i <= self::CONFIG_MAX_PAGES; $i++)
     {
       $page     = $this->getProductPageUrl($this->getHtml($url), $i);
-      $products += $this->extractProductsData($page);
+      $products = $products + $this->extractProductDatas($page);
     }
     
-    if ($products) $this->increaseCatagoryCount();
+    if ($products) $this->increaseCategoryCount();
     
     return $products;
   }
@@ -271,9 +272,56 @@ class YandexParser extends BaseParser
   {
     return $this->last['link'];
   }
+  
+  /****************************************************************************/
+  /*                        PRODUCT DATA EXTRACTORS                           */
+  /****************************************************************************/
+  
+  protected function getProductDataFromFinded($finded, $type)
+  {
+    if (!$finded) return '';
+    
+    $methodName = sprintf('extract%sField', ucfirst($type));
+    $result     = '';
+    
+    if (method_exists($this, $methodName))
+    {
+      $result = $this->$methodName($finded);
+    }
+    else
+    {
+      $result = $finded->innertext;
+    }
+    
+    return mb_trim($result);
+  }
+  
+  protected function extractDescriptionField($finded)
+  {
+    return $finded->innertext;
+  }
+  protected function extractImageField($finded)
+  {
+    return $finded->src;
+  }
+  protected function extractNameField($finded)
+  {
+    return $finded->innertext;
+  }
+  protected function extractPriceField($finded)
+  {
+    return $finded->innertext;
+  }
+  protected function extractCurrencyField($finded)
+  {
+    return $finded->innertext;
+  }
+  protected function extractLinkField($finded)
+  {
+    return sprintf('%s%s', self::CONFIG_YANDEX_URL, $finded->href);
+  }
+  
 }
-
-
 
 if (!function_exists('dump'))
 {
@@ -281,5 +329,13 @@ if (!function_exists('dump'))
   {
     var_dump($values);
     if ($exit) exit();
+  }
+}
+
+if (!function_exists('mb_trim'))
+{
+  function mb_trim($string, $trim_chars = '\s')
+  {
+    return preg_replace('/^['.$trim_chars.']*(?U)(.*)['.$trim_chars.']*$/u', '\\1',$string);
   }
 }
