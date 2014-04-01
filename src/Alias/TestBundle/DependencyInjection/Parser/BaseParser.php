@@ -2,6 +2,7 @@
 
 namespace Alias\TestBundle\DependencyInjection\Parser;
 
+require_once realpath(dirname(__FILE__) . '/SimpleHtmlDom.php');
 use Alias\TestBundle\DependencyInjection\SimpleHtmlDom;
 use Serializable;
 
