@@ -48,25 +48,39 @@ class YandexParser extends BaseParser
   
   public $products;
   protected $htmlDom;
+  protected $usedPages = array();
   protected $categoryCount;
-  protected $last = array(
-    'link'    => false,
-    'page'    => false,
-    'product' => false,
-  );
+  protected $categories = array();
   
   static $nest = 0;
 
+  /**
+   * Увеличить счетчик максимального числа возможного количества
+   * обработанных категорий за раз.
+   * 
+   * @return integer
+   */
   protected function increaseCategoryCount()
   {
-    return ++$this->categoryCount;
+    return $this->categoryCount += 1;
   }
   
-  protected function isCatagoryMax()
+  /**
+   * Превышен ли лимит допустимого количества обработанных категорий.
+   * 
+   * @return boolean
+   */
+  protected function isCatagoryMaxCount()
   {
     return $this->categoryCount >= self::CONFIG_MAX_CATEGORIES;
   }
 
+  /**
+   * Форматирование старторой страницы.
+   * 
+   * @param integer $category
+   * @return string
+   */
   protected function formatStartLink($category)
   {
     return sprintf(
@@ -76,11 +90,23 @@ class YandexParser extends BaseParser
       $category);
   }
 
+  /**
+   * Получить страницу с которой надо начинать работу.
+   * 
+   * @return string
+   */
   protected function getStartUrl()
   {
-    return $this->last['link'] ? : $this->formatStartLink($this->getParam('category'));
+    return $this->formatStartLink($this->getParam('category'));
   }
   
+  /**
+   * Извлечь урлов из страницы по селекторам.
+   * 
+   * @param SimpeHtmlDom $page
+   * @param array $selectors
+   * @return array
+   */
   protected function urlsFrom($page, $selectors)
   {
     $finded = $this->findFrom($page, $selectors, true);
@@ -95,6 +121,15 @@ class YandexParser extends BaseParser
     return $urls;
   }
 
+  /**
+   * Поиск из объекта SimpleHtmlDom по множеству селекторов.
+   * В соответствии с опцией возврата первого попавшегося.
+   * 
+   * @param SimpleHtmlDom $page
+   * @param array $selectors
+   * @param boolean $onlyFirst
+   * @return array
+   */
   protected function findFrom($page, $selectors, $onlyFirst = false)
   {
     if (!$selectors) return $page;
@@ -115,24 +150,47 @@ class YandexParser extends BaseParser
     return $finded;
   }
   
-  protected function getProductPageUrl($page, $currentPage)
+  /**
+   * Получить страницу продуктов категории нужной страницы.
+   * 
+   * @param string $url
+   * @param integer $currentPage
+   * @return string
+   */
+  protected function getProductPageUrl($url, $currentPage)
   {
+    $page       = $this->getHtml($url);
     $pagesUrls  = $this->urlsFrom($page, self::$pageSelector);
     $result     = false;
     $pageIndex  = $currentPage - 1;
     
     if ($pagesUrls)
     {
-      $firstPage  = preg_replace('/\-BPOS=[0-9]*\-/u', '-BPOS=0-', $pagesUrls[0]);
+      $firstPage  = preg_replace(
+        '/\-BPOS=[0-9]*\-/u',
+        '-BPOS=0-',
+        $pagesUrls[0]
+      );
       $pages      = array_merge(array($firstPage), $pagesUrls);
       $result     = $pages[$pageIndex];
+    }
+    else
+    {
+      $result = $url;
     }
     
     return $result;
   }
   
+  /**
+   * Извлечь данные продукта с нужной урлы.
+   * 
+   * @param string $url
+   * @return array
+   */
   protected function extractProductDatas($url)
   {
+    if ($this->checkUsedPage($url)) return array();
     $page           = $this->getHtml($url);
     $productTables  = $this->findFrom($page, self::$productTablesSelector, true);
     $products       = array();
@@ -150,133 +208,381 @@ class YandexParser extends BaseParser
       }
     }
     
-    return $products;
+    $this->addUsedPage($url);
+    
+    return $this->filterFromEmpty($products);
   }
 
+  /**
+   * Извлечь продукты по урле страницы на которой они есть.
+   * 
+   * @param string $url
+   * @return array
+   */
   protected function extractProductsFromUrl($url)
   {
     $products = array();
     
     for ($i = 1; $i <= self::CONFIG_MAX_PAGES; $i++)
     {
-      $page     = $this->getProductPageUrl($this->getHtml($url), $i);
-      $products = $products + $this->extractProductDatas($page);
+      $pageUrl  = $this->getProductPageUrl($url, $i);
+      $products = $products + $this->extractProductDatas($pageUrl);
     }
     
-    if ($products) $this->increaseCategoryCount();
+    if ($products)
+    {
+      $this->markAsFinishedCat($url);
+      $this->increaseCategoryCount();
+    }
     
     return $products;
   }
   
+  /**
+   * Извлечение продуктов по урлу с прохождение от заданной
+   * категории до нужной страницы с продуктами.
+   * 
+   * @param string|array $urls
+   * @return array
+   */
   protected function extractProducts($urls)
   {
-    if (self::$nest > 4) exit();
-    
-    self::$nest++;
     $urls     = !is_array($urls) ? array($urls) : $urls;
     $products = array();
     
     foreach ($urls as $url)
     {
-      if ($this->isCatagoryMax()) break;
+      $this->out('Work with ' . $url);
+      if ($this->isFinishedCat($url) ||
+          $this->isCatagoryMaxCount()) break;
       
-      $page           = $this->getHtml($url);
-      $isProductsHere = $this->urlsFrom($page, self::$productSelector);
-      
-      if (!$isProductsHere)
+      if ($this->isNeedToGoDeeper($url))
       {
-        $categoryUrls = $this->urlsFrom($page, self::$categorySelector);
-        $temp         = $this->extractProducts($categoryUrls);
+        $subCategories  = $this->getSubCategories($url);
+        $temp           = $this->extractProducts($subCategories);
       }
       else
       {
         $temp = $this->extractProductsFromUrl($url);
       }
       
+      $this->markCatIfFinished($url);
       $products += $temp;
     }
-          exit();
 
     return $products;
   }
 
+  /**
+   * Запуск парсера.
+   * 
+   * @return array
+   */
   public function run()
   {
+    $this->setStatus(self::$statuses['start']);
     
-    $products = $this->extractProducts($this->getStartUrl());
-    
-    dump($page->find(self::$productSelector));
-    
-    while (!$page->find(self::$productSelector))
+    if (!$products = $this->extractProducts($this->getStartUrl()))
     {
-      
-      $url = $this->findFrom($page, self::$categorySelector);
-      
-      if ($url == $this->getLastUrl())
-      {
-        $this->setStatus(self::$statuses['abort']);
-        break;
-      }
+      $this->setStatus(self::$statuses['finish']);
     }
     
+    return $this->setProducts($products);
   }
-
+  
+  /**
+   * Получить текущий статус парсинга.
+   * 
+   * @param string $status
+   * @return string
+   */
   public function getStatus()
   {
     return $this->status;
-  }          
+  }
+  
+  /**
+   * Установить текущий статус парсинга.
+   * 
+   * @param string $status
+   * @return string
+   */
   public function setStatus($status)
   {
     return $this->status = $status;
   }          
   
+  /**
+   * Сериализация.
+   * 
+   * @return string
+   */
   public function serialize()
   {
     return serialize(array(
-      'params'  => $this->params,
-      'last'    => $this->getLastParams(),
+      'usedPages'     => array_unique($this->usedPages),
+      'categories'    => $this->categories,
+      'params'        => $this->params,
     ));
   }
   
+  /**
+   * Десиарлизация.
+   * 
+   * @param string $data
+   */
   public function unserialize($data)
   {
     $data = unserialize($data);
-    $this->params = $data['params'];
-    $this->last   = $data['last'];
-  }
-          
-  function getHtml($url)
-  {
-    return $this->file_get_html($this->setLastUrl($url));
+    
+    $this->usedPages      = $data['usedPages'];
+    $this->categories     = $data['categories'];
+    $this->params         = $data['params'];
   }
   
+  /**
+   * Создание объекта дома по урлу.
+   * 
+   * @param string $url
+   * @return \SimpleHtmlDom
+   */
+  function getHtml($url)
+  {
+    if (!$url)
+    {
+      $this->setStatus(self::$statuses['abort']);
+      return false;
+    }
+    
+    if ($url == $this->getLastUrl()) return $this->getDom();
+    
+    return $this->setDom($this->file_get_html($this->setLastUrl($url)));
+  }
+  
+  /****************************************************************************/
+  /*                          SECONDARY FUNCTIONS                             */
+  /****************************************************************************/
+  
+  /**
+   * Взять объект дома.
+   * 
+   * @param SimpleHtmlDom $dom
+   * @return \SimpleHtmlDom
+   */
   protected function getDom()
   {
     return $this->htmlDom;
   }
   
-  protected function getLastParams()
+  /**
+   * Установить объект дома.
+   * 
+   * @param SimpleHtmlDom $dom
+   * @return \SimpleHtmlDom
+   */
+  protected function setDom($dom)
   {
-    return array(
-      'page'    => $this->last['page'],
-      'product' => $this->last['product'],
-      'link'    => $this->last['link'],
-    );
+    return $this->htmlDom = $dom;
   }
   
+  /**
+   * Установить последний спрашиваемый урл.
+   * 
+   * @param string $url
+   * @return string
+   */
   protected function setLastUrl($url)
   {
-    return $this->last['link'] = $url;
-  }
-  protected function getLastUrl()
-  {
-    return $this->last['link'];
+    return $this->htmlLastUrl = $url;
   }
   
+  /**
+   * Получить последний спрашиваемый урл.
+   * 
+   * @return string
+   */
+  protected function getLastUrl()
+  {
+    return $this->htmlLastUrl;
+  }
+  
+  /**
+   * Добавить обработанную страницу.
+   * 
+   * @param string $url
+   * @return string
+   */
+  protected function addUsedPage($url)
+  {
+    return $this->usedPages[] = $url;
+  }
+  
+  /**
+   * Получить обработанные страницы.
+   * 
+   * @return string
+   */
+  protected function getUsedPages()
+  {
+    return $this->usedPages;
+  }
+
+  /**
+   * Проверить была ли уже обработана страница.
+   * 
+   * @param string $url
+   * @return boolean
+   */
+  protected function checkUsedPage($url)
+  {
+    return in_array($url, $this->usedPages);
+  }
+
+  /**
+   * Фильтровать вухмерный массив о полностью пустых.
+   * 
+   * @param array $products
+   * @return array
+   */
+  protected function filterFromEmpty($products)
+  {
+    foreach ($products as $productKey => $product)
+    {
+      if (!array_diff($product, array('', false, null)))
+      {
+        unset($products[$productKey]);
+      }
+    }
+    
+    return $products;
+  }
+  
+  /**
+   * Нужно ли идти дальше в обходе категорий что бы добраться до товаров.
+   * 
+   * @param string $url
+   * @return boolean
+   */
+  protected function isNeedToGoDeeper($url)
+  {
+    return !$this->isProductsHere($url);
+  }
+
+  /**
+   * Проверить есть ли на запрошенном урле товары.
+   * 
+   * @param string $url
+   * @return array
+   */
+  protected function isProductsHere($url)
+  {
+    $page = $this->getHtml($url);
+    
+    return $this->urlsFrom($page, self::$productSelector);
+  }
+  
+  /**
+   * Получить подкатегории категории по урлу.
+   * 
+   * @param string $url
+   * @return array
+   */
+  protected function getSubCategories($url)
+  {
+    $categoryUrls = $this->searchSubCategoriesFromState($url);
+    if (!$categoryUrls)
+    {
+      $page         = $this->getHtml($url);
+      $categoryUrls = $this->urlsFrom($page, self::$categorySelector);
+      $this->saveSubCategories($url, $categoryUrls);
+    }
+    
+    return $categoryUrls;
+  }
+  
+  /**
+   * Поиск подкатегорий категории в уже сохраненном списке.
+   * 
+   * @param string $url
+   * @return array
+   */
+  protected function searchSubCategoriesFromState($url)
+  {
+    $isInState = in_array($url, $this->categories);
+    
+    return $isInState ? $this->categories[$url] : array();
+  }
+  
+  /**
+   * Сохранить подкатегории категории.
+   * 
+   * @param string $category
+   * @param array $sub
+   * @return array
+   */
+  protected function saveSubCategories($category, $sub)
+  {
+    $this->categories[]           = $category;
+    $this->categories[$category]  = $sub;
+    
+    return $this->categories;
+  }
+  
+  /**
+   * Отметить категорию как отработанную если все суб категории
+   * тоже уже отработаны.
+   * 
+   * @param string $url
+   * @return boolean
+   */
+  protected function markCatIfFinished($url)
+  {
+    if ($subCats = $this->searchSubCategoriesFromState($url))
+    {
+      $diff = array_diff($subCats, $this->getUsedPages());
+      if (!$diff)
+      {
+        $this->markAsFinishedCat($url);
+      }
+    }
+    
+    return true;
+  }
+
+  /**
+   * Запомнить категорию как обработанную.
+   * alias - addUsedPage.
+   * 
+   * @param string $url
+   * @return string
+   */
+  protected function markAsFinishedCat($url)
+  {
+    return $this->addUsedPage($url);
+  }
+  
+  /**
+   * ЗАвершена ли работа с данной категорией?
+   * 
+   * @param string $url
+   * @return boolean
+   */
+  protected function isFinishedCat($url)
+  {
+    return in_array($url, $this->usedPages);
+  }
+
   /****************************************************************************/
   /*                        PRODUCT DATA EXTRACTORS                           */
   /****************************************************************************/
   
+  /**
+   * Получить данные из найденых таблиц товаров.
+   * 
+   * @param simple_html_node $finded
+   * @param string $type
+   * @return string
+   */
   protected function getProductDataFromFinded($finded, $type)
   {
     if (!$finded) return '';
@@ -320,7 +626,6 @@ class YandexParser extends BaseParser
   {
     return sprintf('%s%s', self::CONFIG_YANDEX_URL, $finded->href);
   }
-  
 }
 
 if (!function_exists('dump'))
