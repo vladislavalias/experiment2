@@ -2,13 +2,18 @@
 <html>
     <head>
         <meta charset="UTF-8" />
-        <title>{% block title %}Welcome!{% endblock %}</title>
+        <title>{% block title %}ha-ha-ha{% endblock %}</title>
         {% block stylesheets %}
         
           <link href="{{ asset('bundles/aliastest/css/main.css') }}" rel="stylesheet" />
+          <link href="{{ asset('bundles/aliastest/css/sorter.css') }}" rel="stylesheet" />
         {% endblock %}
         <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
-        {% block javascripts %}{% endblock %}
+        {% block javascripts %}
+          <script type="text/javascript" src="{{ asset('bundles/aliastest/js/jquery_1_9_1.min.js') }}"></script>
+          <script type="text/javascript" src="{{ asset('bundles/aliastest/js/jquery.tablesorter.min.js') }}"></script>
+          <script type="text/javascript" src="{{ asset('bundles/aliastest/js/sort.js') }}"></script>
+        {% endblock %}
     </head>
     <body>
       <div class="wrapper">

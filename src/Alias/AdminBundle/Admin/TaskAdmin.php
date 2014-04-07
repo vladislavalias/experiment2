@@ -47,6 +47,11 @@ class TaskAdmin extends Admin
         'choices' => array(
             self::$categories
         ),
+        'label' => 'Категория'))
+      ->add('status', 'choice', array(
+        'choices' => array(
+            array_flip(Task::$statusText)
+        ),
         'label' => 'Категория'));
   }
 

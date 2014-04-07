@@ -14,7 +14,7 @@ use Doctrine\ORM\Mapping as ORM;
 class Product
 {
   static $currencyTranslate = array(
-    'WAT?', 'USD', 'UAH', 'EUR'
+    'WAT?', 'usd', 'uah', 'eur', 'грн'
   );
   
     /**
@@ -304,6 +304,15 @@ class Product
   }
   
   /**
+   * @ORM\PrePersist
+   */
+  public function setCurrencyValue()
+  {
+    $current        = mb_strtolower($this->currency, 'UTF8');
+    $this->currency = array_search($current, self::$currencyTranslate);
+  }
+  
+  /**
    * @ORM\PreUpdate
    */
   public function updateUpdatedAtValue()
@@ -316,7 +325,8 @@ class Product
     $price        = $this->getPrice();
     $currency     = $this->getCurrency();
     $currencyName = self::$currencyTranslate[$currency];
+    $formated     = sprintf('%.02f %s', $price, $currencyName);
     
-    return sprintf('%.02f %s', $price, $currencyName);
+    return $price ? $formated : 'Нет в продаже.';
   }
 }

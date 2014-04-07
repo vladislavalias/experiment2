@@ -1,33 +1,44 @@
-{% for product in products %}
-  <div class="product">
-    <table>
+<div class="product">
+    <table id="product-table" class="tablesorter">
       <thead>
         <tr>
-          <td colspan="3">
-            {{ product.name }}
-          </td>
+          <th>
+            Фото
+          </th>
+          <th>
+            Название
+          </th>
+          <th>
+            Цена
+          </th>
+          <th>
+            Описание
+          </th>
+          <th>
+            Ссылка
+          </th>
         </tr>
       </thead>
       <tbody>
+
+{% for product in products %}
         <tr>
-          <td class="image">
+          <td>
             <img src="{{ product.image }}" />
+          </td>
+          <td>
+            {{ product.name }}
+          </td>
+          <td>
+            {{ product.formatPrice }}
           </td>
           <td>
             {{ product.description }}
           </td>
-          <td class="price">
-            {{ product.formatPrice }}
+          <td>
+            <a href="{{ product.link }}" target="__blank">Показать</a>
           </td>
         </tr>
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3">
-            {{ product.link }}
-          </td>
-        </tr>
-      </tfoot>
+{% endfor %}
     </table>
   </div>
-{% endfor %}

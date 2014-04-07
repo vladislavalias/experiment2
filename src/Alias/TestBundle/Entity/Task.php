@@ -236,6 +236,17 @@ class Task
   /**
    * @ORM\PreUpdate
    */
+  public function setStatusValueUpdate()
+  {
+    if (self::$statusText['start'] == $this->status && !$this->statement)
+    {
+      $this->statement = '""';
+    }
+  }
+  
+  /**
+   * @ORM\PreUpdate
+   */
   public function updateUpdatedAtValue()
   {
     $this->updatedAt = new \DateTime();
