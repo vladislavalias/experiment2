@@ -258,7 +258,6 @@ class YandexParser extends BaseParser
       
       if ($this->isNeedToGoDeeper($url))
       {
-        $this->out('Going deeper ... |');
         $subCategories  = $this->getSubCategories($url);
         $temp           = $this->extractProducts($subCategories);
       }
