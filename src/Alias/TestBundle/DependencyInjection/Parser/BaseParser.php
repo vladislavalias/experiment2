@@ -3,23 +3,28 @@
 namespace Alias\TestBundle\DependencyInjection\Parser;
 
 require_once realpath(dirname(__FILE__) . '/SimpleHtmlDom.php');
+
 use Alias\TestBundle\DependencyInjection\SimpleHtmlDom;
 use Serializable;
+use Alias\TestBundle\Entity\Task;
 
 abstract class BaseParser implements Serializable
 {
   protected $products, $status, $params, $htmlLastUrl, $output;
   
-  static $statuses = array(
-    'start'   => 'Started',
-    'abort'   => 'Aborted',
-    'finish'  => 'Finished',
-  );
+  static $statuses = array();
   
+  /**
+   * Конструтор.
+   * 
+   * @param array $configuration
+   */
   public function __construct($configuration)
   { 
     $this->params = $configuration;
     $this->setStatus(self::$statuses['start']);
+    
+    self::$statuses = Task::$statusText;
   }
   
   abstract function getStatus();
@@ -27,28 +32,66 @@ abstract class BaseParser implements Serializable
   abstract function unserialize($data);
   abstract function serialize();
 
-  public function getProducts()
-  {
-    return $this->products;
-  }
-  public function setProducts($products)
+  /**
+   * Установка найденных продуктов переданных от парсера.
+   * 
+   * @param array $products
+   * @return array
+   */
+  protected function setProducts($products)
   {
     return $this->products = $products;
   }
   
-  public function out($message)
+  /**
+   * Получение найденных продуктов от парсера.
+   * 
+   * @return array
+   */
+  protected function getProducts()
+  {
+    return $this->products;
+  }
+  
+  /**
+   * Вывод в консоль пользуясь симфониевским выводом.
+   * 
+   * @param string $message
+   * @return null
+   */
+  protected function out($message)
   {
     return $this->getOut()->writeln($message);
   }
-  public function setOut($out)
+
+  /**
+   * Установка экземпляра для симфониевского вывода.
+   * 
+   * @param OutputInterface $out
+   * @return OutputInterface
+   */
+  protected function setOut($out)
   {
     return $this->output = $out;
   } 
-  public function getOut()
+  
+  /**
+   * Выборка экземпляра симфониевского вывода.
+   * 
+   * @return OutputInterface
+   */
+  protected function getOut()
   {
     return $this->output;
   }
   
+  /**
+   * Функция финализирования выполнения парсера.
+   * В частности - определение статуса выполнения, а так же сериализация
+   * объекта.
+   * 
+   * @return array
+   */
   public function finalize()
   {
     return array(
@@ -57,6 +100,12 @@ abstract class BaseParser implements Serializable
     );
   }
   
+  /**
+   * Вытаскивание данных по имени из конфигурации парсера.
+   * 
+   * @param string $name
+   * @return mixed
+   */
   public function getParam($name)
   {
     return isset($this->params[$name]) ? $this->params[$name] : false;
@@ -97,7 +146,13 @@ abstract class BaseParser implements Serializable
     return $dom;
   }
 
-  // dump html dom tree
+  /**
+   * Функция дампа идущая в коплекте с парсером.
+   * 
+   * @param SimpleHtmlDom $node
+   * @param array $show_attr
+   * @param integer $deep
+   */
   function dump_html_tree($node, $show_attr=true, $deep=0)
   {
     $node->dump($node);

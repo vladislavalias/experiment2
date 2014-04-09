@@ -27,14 +27,4 @@ class MainPageController extends Controller
         array('products' => $products)
     );
   }
-  
-  /**
-   * @Route("/hello/{name}/", name="_main_hello")
-   * @Template()
-   */
-  public function helloAction($name = false)
-  {
-    var_dump($name);
-    exit();
-  }
 }

@@ -1,3 +1,1 @@
-alias_legacy_homepage:
-    pattern:  /hello/{name}
-    defaults: { _controller: AliasLegacyBundle:Default:index }
+

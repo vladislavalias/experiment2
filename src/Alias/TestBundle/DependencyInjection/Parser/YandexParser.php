@@ -7,25 +7,53 @@ use Alias\TestBundle\DependencyInjection\SimpleHtmlDom;
 
 class YandexParser extends BaseParser
 {
+  /**
+   * Базовый урл сайта цели.
+   */
   const CONFIG_YANDEX_URL = 'http://market.yandex.ua';
+  
+  /**
+   * Шаблон категорий сайта цели.
+   */  
   const CONFIG_CATEGORY_URL_TEMPLATE = '/catalog.xml?hid=';
   
   const CONFIG_MAX_ERRORS       = 3;
   const CONFIG_MAX_PAGES        = 1;
   const CONFIG_MAX_CATEGORIES   = 1;
   
+  /**
+   * Селекторы перечиления страниц товаров.
+   *
+   * @var array
+   */
   static $pageSelector   = array(
     '.b-pager__page'
   );
   
+  
+  /**
+   * Селектор продуктов на странице конечной категории.
+   *
+   * @var array
+   */
   static $productSelector   = array(
     '.page__b-offers__guru a[href^=/model.xml]'
   );
   
+  /**
+   * Селектор таблиц продуктов.
+   *
+   * @var array
+   */
   static $productTablesSelector   = array(
     'div.b-offers'
   );
   
+  /**
+   * Селекторы данных продукта из таблицы.
+   *
+   * @var array
+   */
   static $productDataSelectors = array(
     'description' => '.b-offers__spec',
     'image'       => '.b-offers__img',
@@ -35,6 +63,11 @@ class YandexParser extends BaseParser
     'link'        => '.b-offers__name',
   );
   
+  /**
+   * Селекторы категорий.
+   *
+   * @var array
+   */
   static $categorySelector  = array(
     'td.categories a[href^=/catalog.xml]',
     'div.b-category-pop-vendors a[href^=/guru.xml]',
@@ -52,8 +85,6 @@ class YandexParser extends BaseParser
   protected $categoryCount;
   protected $categories = array();
   
-  static $nest = 0;
-
   /**
    * Увеличить счетчик максимального числа возможного количества
    * обработанных категорий за раз.
