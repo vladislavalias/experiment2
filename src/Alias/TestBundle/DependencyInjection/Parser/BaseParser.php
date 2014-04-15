@@ -21,10 +21,10 @@ abstract class BaseParser implements Serializable
    */
   public function __construct($configuration)
   { 
+    self::$statuses = Task::$statusText;
+    
     $this->params = $configuration;
     $this->setStatus(self::$statuses['start']);
-    
-    self::$statuses = Task::$statusText;
   }
   
   abstract function getStatus();
@@ -38,7 +38,7 @@ abstract class BaseParser implements Serializable
    * @param array $products
    * @return array
    */
-  protected function setProducts($products)
+  public function setProducts($products)
   {
     return $this->products = $products;
   }
@@ -48,7 +48,7 @@ abstract class BaseParser implements Serializable
    * 
    * @return array
    */
-  protected function getProducts()
+  public function getProducts()
   {
     return $this->products;
   }
@@ -59,7 +59,7 @@ abstract class BaseParser implements Serializable
    * @param string $message
    * @return null
    */
-  protected function out($message)
+  public function out($message)
   {
     return $this->getOut()->writeln($message);
   }
@@ -70,7 +70,7 @@ abstract class BaseParser implements Serializable
    * @param OutputInterface $out
    * @return OutputInterface
    */
-  protected function setOut($out)
+  public function setOut($out)
   {
     return $this->output = $out;
   } 
@@ -80,7 +80,7 @@ abstract class BaseParser implements Serializable
    * 
    * @return OutputInterface
    */
-  protected function getOut()
+  public function getOut()
   {
     return $this->output;
   }
